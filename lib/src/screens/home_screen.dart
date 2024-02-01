@@ -1,21 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_base/src/screens/bloc/user_bloc.dart';
+import 'package:flutter_base/src/services/remote_datasource.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class Home extends StatelessWidget {
-  const Home({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+  const Home({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(title),
-      ),
-      body: Center(
-        child: Text(
-          'This is Home Screen.',
-          style: Theme.of(context).textTheme.headlineMedium,
+    return BlocProvider(
+      create: (context) =>
+          UserBloc(remoteDatasource: RemoteDatasource())..add(LoadUser()),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Users'),
+        ),
+        body: BlocBuilder<UserBloc, UserState>(
+          builder: (context, state) {
+            if (state is UserLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is UserLoaded) {
+              final data = state.users;
+              return ListView.builder(
+                  itemCount: data.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: CircleAvatar(
+                          backgroundImage: NetworkImage(data[index].avatar)),
+                      title: Text(
+                          '${data[index].firstName} ${data[index].lastName}'),
+                      subtitle: Text(data[index].email),
+                    );
+                  });
+            } else if (state is UserError) {
+              return Center(child: Text(state.error));
+            }
+            return const SizedBox();
+          },
         ),
       ),
     );
